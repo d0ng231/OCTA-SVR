@@ -1,0 +1,16 @@
+# Core synthesis deps
+numpy
+scipy
+matplotlib
+anytree
+natsort
+open3d
+nibabel
+Pillow
+PyYAML
+tqdm
+
+# Training/inference deps
+llamafactory>=0.10.0
+torch
+torchvision

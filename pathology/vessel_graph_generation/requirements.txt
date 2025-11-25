@@ -1,0 +1,9 @@
+anytree
+numpy
+scipy
+matplotlib
+ipykernel
+natsort
+tqdm
+open3d
+nibabel

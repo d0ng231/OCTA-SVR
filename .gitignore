@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.DS_Store
+
+# Training outputs and datasets
+outputs/
+data/
+images/
+logs/
+
+# Editors
+.vscode/
+.idea/
