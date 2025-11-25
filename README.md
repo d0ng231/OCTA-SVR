@@ -1,14 +1,14 @@
 # OCTA-SVR (Synthetic Vasculature Reasoning)
 
-An anonymized release of the code used for the **Synthetic Vasculature Reasoning (SVR)** pipeline: pathology-aware OCTA synthesis plus LLaMA-Factory training/inference configs for VLM reasoning.
+Public release of the core code used in the **Synthetic Vasculature Reasoning (SVR)** paper: pathology-aware OCTA synthesis, automatic reasoning text generation, and minimal LLaMA-Factory configs for training/inference.
 
-- Synthetic generation and text pairing scripts live in `pathology/` (forked from and compatible with [OCTA-autosegmentation](https://github.com/aiforvision/OCTA-autosegmentation)).
-- LLaMA-Factory configs and inference helpers live in `llama_factory/`.
-- Placeholder release of the **OCTA-100K-SVR** dataset: `https://zenodo.org/record/0000000` (replace with the real Zenodo record once available).
+- Pathology-aware synthesis and VLM pair creation are under `pathology/` (compatible with [OCTA-autosegmentation](https://github.com/aiforvision/OCTA-autosegmentation)).
+- LLaMA-Factory assets are under `llama_factory/` (upstream repo: https://github.com/hiyouga/LLaMA-Factory).
+- **OCTA-100K-SVR dataset**: https://zenodo.org/records/17706653
 
 ## Quickstart
 ```bash
-git clone <this-repo>
+git clone https://github.com/d0ng231/OCTA-SVR
 cd OCTA-SVR
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
@@ -25,7 +25,7 @@ python pathology/generate_synthetic_octa_images.py \
   --gan_config /path/to/gan/config.yml \
   --gan_epoch 150
 ```
-You can skip `--use_gan` for grayscale outputs. The GAN config/checkpoints can be downloaded from the upstream OCTA-autosegmentation repo.
+Skip `--use_gan` for grayscale outputs. GAN configs/weights (and the `test.py` runner) live in the upstream OCTA-autosegmentation repo; to use GAN rendering, run this script inside that repo or copy it into that workspace.
 
 2) **Build VLM pairs with pathology reasoning**
 ```bash
@@ -36,19 +36,19 @@ python pathology/generate_vlm_dataset.py \
   --stage all
 ```
 
-3) **Post-process overlays/metadata (optional cleanup)**
+3) **(Optional) Post-process overlays/metadata**
 ```bash
 python pathology/pathology_postprocess.py --dataset data/vlm_dataset_demo
 ```
 
-The key outputs are `images/*.png`, `metadata.jsonl`, and `pairs.jsonl` (ShareGPT format). Adjust sampling ranges in `generate_vlm_dataset.py` for different pathology strengths.
+Key outputs: `images/*.png`, `metadata.jsonl`, and `pairs.jsonl` (ShareGPT format). Adjust pathology ranges in `generate_vlm_dataset.py` as needed.
 
 ## Training with LLaMA-Factory
-Download/unzip `OCTA-100K-SVR` to `data/OCTA-100K-SVR/` so that `pairs_diversified.jsonl` and `images/` sit under that folder. Then run:
+Place `OCTA-100K-SVR` under `data/OCTA-100K-SVR/` (so `pairs_diversified.jsonl` and `images/` live there), then run:
 ```bash
 bash llama_factory/scripts/run_svr_training.sh
 ```
-The script calls `llamafactory-cli` with `llama_factory/configs/svr_qwen3vl_full.yaml` and `llama_factory/data/dataset_info.json`. Edit the config to point to a different base model or change batch size/epochs.
+The script calls `llamafactory-cli` with `llama_factory/configs/svr_qwen3vl_full.yaml` and `llama_factory/data/dataset_info.json`. Edit the config to swap the base model or adjust batch size/epochs. Refer to the upstream LLaMA-Factory docs for environment/setup details.
 
 ## Inference
 ```bash
@@ -61,12 +61,7 @@ bash llama_factory/scripts/run_inference.sh \
 The underlying helper `llama_factory/inference_octa_CoT.py` supports both single-image and folder inference, optional LoRA adapters, and template selection (`qwen3_vl`, `qwen2_vl`, etc.).
 
 ## Repo layout
-- `pathology/`: Synthetic vessel/pathology simulation, CoT pairing, and cleanup utilities.
-- `pathology/vessel_graph_generation/`: Graph-growth simulator and rasterization helpers.
-- `llama_factory/`: Training config, dataset descriptors, inference helpers, and runnable scripts.
-- `requirements.txt`: Minimal dependencies (GAN weights/models are not included).
-
-## Notes
-- Paths in this release are relative; no cluster-specific directories remain.
-- Pretrained GAN weights and any clinical data are intentionally excluded. Use the upstream OCTA-autosegmentation repo or your own models for GAN inference.
-- Replace the placeholder Zenodo link with the final public record when available.
+- `pathology/`: Synthetic vessel/pathology simulation, CoT pairing, cleanup.
+- `pathology/vessel_graph_generation/`: Graph-growth simulator and rasterization.
+- `llama_factory/`: Training config, dataset descriptor, inference helpers, scripts.
+- `requirements.txt`: Minimal deps (GAN weights/models not included).

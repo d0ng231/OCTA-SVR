@@ -2067,6 +2067,15 @@ def _call_gan_inference(
     """
     import subprocess, glob as _glob
 
+    test_script = os.path.join(SCRIPT_DIR, "test.py")
+    if not os.path.isfile(test_script):
+        raise SystemExit(
+            "GAN inference requires 'test.py' and the GAN models from the "
+            "OCTA-autosegmentation repository. Either run this script inside "
+            "a clone of https://github.com/aiforvision/OCTA-autosegmentation "
+            "or copy it into that workspace."
+        )
+
     root_abs = os.path.abspath(graph_root)
     patt_overlay = os.path.join(root_abs, "**", "pathology_overlay_white.png")
     patt_panned = os.path.join(root_abs, "**", "art_ven_img_gray_panned.png")
@@ -2087,7 +2096,7 @@ def _call_gan_inference(
 
     cmd = [
         sys.executable,
-        os.path.join(SCRIPT_DIR, "test.py"),
+        test_script,
         "--config_file", gan_config,
         "--epoch", str(epoch),
         f"--Test.data.real_A.files={chosen_pattern}",
