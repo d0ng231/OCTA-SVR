@@ -63,26 +63,20 @@ To additionally render realistic OCTA images with the GAN from [OCTA-autosegment
 ```
 GAN configs/weights (and the `test.py` runner) live in the upstream OCTA-autosegmentation repo; to use GAN rendering, run this script inside that repo or copy it into that workspace. In most SVR use cases you do **not** need to call this script directly—prefer the config-driven `generate_vlm_dataset.py` pipeline above.
 
-### 3) (Legacy) ad-hoc VLM pair generation
+### 3) Generate VLM text pairs
 
-You can still drive the generator purely from CLI arguments:
+If you already have graphs/images under a dataset root, you can regenerate only the VLM text pairs (without re-running growth or GAN) via:
 
 ```bash
 python pathology/generate_vlm_dataset.py \
-  --num_samples 100 \
-  --out_dir data/vlm_dataset_demo \
-  --use_gan \
-  --stage all
+  --config_file pathology/generation_vlm_dropout_ma.yml \
+  --out_dir data/vlm_dataset_dropout_ma \
+  --stage pairs
 ```
 
-This uses minimal default pathology settings and is primarily kept for backwards compatibility and quick experiments; for reproducible datasets, prefer the YAML-driven `generation_vlm_dropout_ma.yml` entry.
+This reads existing `vessel_graphs/` and `images/` under `data/vlm_dataset_dropout_ma/` and writes/updates `metadata.jsonl` and `pairs.jsonl` (ShareGPT-style conversations) in that folder.
 
-### 4) (Optional) Post-process overlays/metadata
-```bash
-python pathology/pathology_postprocess.py --dataset data/vlm_dataset_demo
-```
-
-Key outputs for any dataset root: `images/*.png`, `metadata.jsonl`, and `pairs.jsonl` (ShareGPT format). Pathology ranges and profiles are best adjusted via the YAML configs in `pathology/` rather than editing Python.
+Key outputs for any dataset root: `images/*.png`, `metadata.jsonl`, and `pairs.jsonl`. Pathology ranges and profiles are best adjusted via the YAML configs in `pathology/` rather than editing Python.
 
 ## Training with LLaMA-Factory
 Place `OCTA-100K-SVR` under `data/OCTA-100K-SVR/` (so `pairs_diversified.jsonl` and `images/` live there), then run:
