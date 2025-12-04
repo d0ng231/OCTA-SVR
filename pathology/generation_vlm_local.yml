@@ -1,0 +1,25 @@
+General:
+  seed: 3001
+  num_samples: 10
+  workers: -1        # -1 => all CPU cores but one
+  use_gan: false     # disable GAN for fast pathology debugging
+  save_masks: true
+
+Paths:
+  out_dir: ./data/vlm_pathology_demo
+  vessel_config: ./pathology/vessel_graph_generation/configs/dataset_18_June_2023.yml
+
+Pathology:
+  profile: balanced_combo
+  dropout_prob: 0.9
+  dropout_count_range: [2, 4]
+  severity: 0.85              # dropout size/strength (0..1)
+  nv_severity: 0.40           # NV subtlety/extent (0..1)
+  ma_severity: 0.60           # microaneurysm frequency/size/length
+  tortuosity_severity: 0.65   # tortuosity + remodeling
+  mask_vessel_sparing_px: 0   # keep masks flush with vessel borders
+
+VQA:
+  qa_subset: dropout
+  dropout_styles: auto
+

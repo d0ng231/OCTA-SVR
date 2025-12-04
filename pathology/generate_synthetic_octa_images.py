@@ -67,6 +67,11 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 if SCRIPT_DIR not in sys.path:
     sys.path.append(SCRIPT_DIR)
 
+# Standardized default output roots (used for CLI + --out_dir aliasing)
+DEFAULT_GRAPH_OUT_DIR = os.path.join(SCRIPT_DIR, "generated", "vessel_graphs")
+DEFAULT_IMAGE_OUT_DIR = os.path.join(SCRIPT_DIR, "generated", "images")
+DEFAULT_LABEL_OUT_DIR = os.path.join(SCRIPT_DIR, "generated", "labels")
+
 from vessel_graph_generation.forest import Forest
 from vessel_graph_generation.greenhouse import Greenhouse
 from vessel_graph_generation.greenhouse_pathology import GreenhouseDropout
@@ -2156,7 +2161,7 @@ def main():
     parser = argparse.ArgumentParser("Generate synthetic OCTA samples end-to-end")
     parser.add_argument("--num_samples", type=int, default=1)
     parser.add_argument("--vessel_config", type=str, default=os.path.join(SCRIPT_DIR, "vessel_graph_generation", "configs", "dataset_18_June_2023.yml"))
-    parser.add_argument("--graph_out_dir", type=str, default=os.path.join(SCRIPT_DIR, "generated", "vessel_graphs"))
+    parser.add_argument("--graph_out_dir", type=str, default=DEFAULT_GRAPH_OUT_DIR)
     parser.add_argument("--save_raw_mip", action="store_true", help="Save raw grayscale MIP images from tree2img during graph generation", default=True)
     parser.add_argument("--save_3d", choices=["npy", "nifti"], default=None)
     parser.add_argument("--save_pathology_masks", action="store_true", help="Save binary masks for dropout and neovascularization regions", default=False)
@@ -2167,13 +2172,25 @@ def main():
     parser.add_argument("--gan_config", type=str, default=None)
     parser.add_argument("--gan_epoch", type=str, default="150")
     parser.add_argument("--gan_device", type=str, default=None, help="cpu or cuda")
-    parser.add_argument("--image_out_dir", type=str, default=os.path.join(SCRIPT_DIR, "generated", "images"))
+    parser.add_argument("--image_out_dir", type=str, default=DEFAULT_IMAGE_OUT_DIR)
 
     # Labels
     parser.add_argument("--render_labels", action="store_true")
-    parser.add_argument("--label_out_dir", type=str, default=os.path.join(SCRIPT_DIR, "generated", "labels"))
+    parser.add_argument("--label_out_dir", type=str, default=DEFAULT_LABEL_OUT_DIR)
     parser.add_argument("--resolution", type=str, default="1216,1216,16", help="Px resolution for rendering labels (for 2D, pass H,W)")
     parser.add_argument("--mip_axis", type=int, default=2)
+
+    # Unified base output directory (optional alias)
+    parser.add_argument(
+        "--out_dir",
+        type=str,
+        default=None,
+        help=(
+            "Base directory for all outputs. "
+            "If set (and per-type dirs are not overridden), graphs, GAN images, and labels "
+            "are written to '<out_dir>/vessel_graphs', '<out_dir>/images', and '<out_dir>/labels'."
+        ),
+    )
 
     # Pathology options (physical only)
     parser.add_argument("--physical_dropout", type=str, default=None, help="Physically simulate dropout during growth as 'cx,cy,r'")
@@ -2186,6 +2203,16 @@ def main():
     parser.add_argument("--growth_progress", type=float, default=1.0, help="Fraction of total growth iterations across modes (0,1]. Early-stops growth to control depth.")
     parser.add_argument("--debug", action="store_true")
     args = parser.parse_args()
+
+    # If a unified base --out_dir is provided, map it to per-type output roots
+    if args.out_dir:
+        base_root = os.path.abspath(args.out_dir)
+        if args.graph_out_dir == DEFAULT_GRAPH_OUT_DIR:
+            args.graph_out_dir = os.path.join(base_root, "vessel_graphs")
+        if args.image_out_dir == DEFAULT_IMAGE_OUT_DIR:
+            args.image_out_dir = os.path.join(base_root, "images")
+        if args.label_out_dir == DEFAULT_LABEL_OUT_DIR:
+            args.label_out_dir = os.path.join(base_root, "labels")
 
     if args.debug:
         warnings.filterwarnings('error')

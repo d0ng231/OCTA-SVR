@@ -1,0 +1,85 @@
+General:
+  seed: null
+  num_samples: 1000          # 调到 100000 即可对齐 OCT_22_100k
+  workers: -1                # -1 => all CPU cores but one
+  use_gan: false             # GAN 用 CLI 打开，便于在无 GAN 时调试
+  save_masks: false          # 与原始 dropout_ma 设置一致（不导出 /masks）
+
+Paths:
+  out_dir: ./data/vlm_dataset_dropout_ma
+  vessel_config: ./pathology/vessel_graph_generation/configs/dataset_18_June_2023.yml
+  # gan_config 不在这里写死，使用 CLI --gan_config 传入
+
+GAN:
+  epoch: "150"
+  # GAN batch_size / num_workers 同样建议用 CLI 或单独 YAML 控制
+
+Pathology:
+
+  Dropout:
+    probability: 0.5
+    count_range: [1, 6]
+    # Footprint sizes (normalized units)
+    radius_norm_range: [0.18, 0.32]
+    # FAZ‑centric ring where dropout centers are sampled (inner‑biased)
+    ring_radius_norm_range: [0.05, 0.4]
+    # Dropout severity (0..1)
+    strength_range: [0.90, 0.99]
+    ensure_one_large: true
+    # Random vessel elongation in dropout areas (aspect ratio range)
+    vessel_elongation_range: [1.0, 1.5]  # 1.0 = no elongation, >1.0 = elongated
+    # Random vessel dilation in dropout areas (scale range)
+    vessel_dilation_range: [1.0, 1.5]    # 1.0 = no dilation, >1.0 = dilated
+
+  MA:
+    # Per‑segment spawn probability in dropout band
+    density: 0.032
+    size_mm_range: [0.01, 0.03]
+    near_dropout_only: true
+    # Scale MA spawn probability with dropout strength (0..1)
+    # Effective: p *= (1 + gain * strength). Set 0.0 to disable.
+    prob_vs_dropout_strength_gain: 15.0
+    # Visual/shape irregularity for MA overlays (0..1)
+    shape_randomness: 0.9
+
+  NV:
+    # Probability to add neovascular growth
+    probability: 0.4
+    # Severity (0..1) scales branch count/length/thickness
+    severity: 0.25
+    # Graph augmentation (no overlay): branch from existing vessel tips to form NV sprouts
+    augmentation: true
+    # Overlay-only rendering controls (do not affect growth)
+    overlay:
+      # Feathering blur radius (px). You can also specify a range [min, max].
+      feather_px: [0, 2]
+      # thickness (px) range for NV polylines in overlays; if provided, overrides default.
+      thickness_px_range: [1, 2]
+
+  Tortuosity:
+    # Apply subtle vessel curl along large dropout borders
+    probability: 0.5
+    gain_range: [0.01, 0.5]
+    # Band near dropout border (normalized inside score); concentrate near border
+    band: [0.30, 0.75]
+
+VQA:
+  # Mixed-only VQA（本地脚本会自动用 build_mixed_paragraph）
+
+FAZ:
+  # Uniform disk jitter radius in normalized units (used as view shift to keep growth unchanged)
+  center_jitter: 0.15
+  # FAZ radius ~ Normal(mean_mm, std_mm) in millimeters; mapped by param_scale
+  radius_bound: [0.42, 0.1]
+  # Maximum absolute normalized shift allowed on each axis; shifts beyond this are clamped
+  max_center_shift: 0.25
+
+# Rendering-only controls (no effect on growth)
+Render:
+  # Maximum radius (mm) used when drawing vessels. Larger segments are clamped, not dropped.
+  max_radius_mm: 0.011
+  # Legacy draw-time NV radius scale (still used for growth-time NV flags); post-growth augmentation ignores overlays
+  nv_radius_scale: 1.1
+  # Optional: burn MA into grayscale (kept true so GAN sees MA shapes)
+  ma_overlay_burn_gray: true
+

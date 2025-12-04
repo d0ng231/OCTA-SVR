@@ -10,24 +10,63 @@ Public release of the core code used in the **Synthetic Vasculature Reasoning (S
 ```bash
 git clone https://github.com/d0ng231/OCTA-SVR
 cd OCTA-SVR
-python -m venv .venv && source .venv/bin/activate
+python3 -m venv .venv  # Python >= 3.10 recommended
+source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
 ## Synthetic pathology generation
-1) **Generate vessel graphs and images**
+### 1) Standard pathology-aware dataset (dropout + MA + NV)
+
+To generate a pathology-aware OCTA-style dataset with capillary dropout, microaneurysms, neovascular tufts and mild tortuosity, use the provided config:
+
+```bash
+# Graphs + vessel maps + overlays (no GAN, fast)
+python pathology/generate_vlm_dataset.py \
+  --config_file pathology/generation_vlm_dropout_ma.yml \
+  --stage graphs
+
+# Full pipeline with GAN + image–text pairs
+python pathology/generate_vlm_dataset.py \
+  --config_file pathology/generation_vlm_dropout_ma.yml \
+  --stage all \
+  --use_gan \
+  --gan_config /path/to/OCTA-autosegmentation/docker/trained_models/GAN/config.yml \
+  --gan_epoch 150 \
+  --gan_device cuda
+```
+
+Outputs (under `data/vlm_dataset_dropout_ma/` by default):
+
+- `vessel_graphs/**/`: CSV graphs, `art_ven_img_gray.png`, `pathology_overlay_white.png`, `pathology_vis.png`, `dropout_ma.json`, `pathology.yml`.
+- `images/M_*.png`: panned/cropped vessel maps with pathology overlays (optionally GAN-based OCTA if `--use_gan` is enabled).
+- `metadata.jsonl`, `pairs.jsonl`: reasoning-ready VLM data (ShareGPT-style JSONL).
+
+The YAML `pathology/generation_vlm_dropout_ma.yml` is a simplified port of
+`configs/generation_vlm_dropout_ma.yml` from [OCTA-autosegmentation](https://github.com/aiforvision/OCTA-autosegmentation), keeping only the knobs needed for SVR.
+
+### 2) Low-level vessel graph + vessel map demo (no pathology)
+
 ```bash
 python pathology/generate_synthetic_octa_images.py \
   --num_samples 100 \
   --out_dir data/vlm_dataset_demo \
-  --workers -1 \
+  --workers -1
+```
+This creates per-sample graph folders under `data/vlm_dataset_demo/vessel_graphs/` that contain CSV graphs and grayscale vessel maps (`art_ven_img_gray.png`).
+
+To additionally render realistic OCTA images with the GAN from [OCTA-autosegmentation](https://github.com/aiforvision/OCTA-autosegmentation), append:
+```bash
   --use_gan \
   --gan_config /path/to/gan/config.yml \
   --gan_epoch 150
 ```
-Skip `--use_gan` for grayscale outputs. GAN configs/weights (and the `test.py` runner) live in the upstream OCTA-autosegmentation repo; to use GAN rendering, run this script inside that repo or copy it into that workspace.
+GAN configs/weights (and the `test.py` runner) live in the upstream OCTA-autosegmentation repo; to use GAN rendering, run this script inside that repo or copy it into that workspace. In most SVR use cases you do **not** need to call this script directly—prefer the config-driven `generate_vlm_dataset.py` pipeline above.
 
-2) **Build VLM pairs with pathology reasoning**
+### 3) (Legacy) ad-hoc VLM pair generation
+
+You can still drive the generator purely from CLI arguments:
+
 ```bash
 python pathology/generate_vlm_dataset.py \
   --num_samples 100 \
@@ -36,12 +75,14 @@ python pathology/generate_vlm_dataset.py \
   --stage all
 ```
 
-3) **(Optional) Post-process overlays/metadata**
+This uses minimal default pathology settings and is primarily kept for backwards compatibility and quick experiments; for reproducible datasets, prefer the YAML-driven `generation_vlm_dropout_ma.yml` entry.
+
+### 4) (Optional) Post-process overlays/metadata
 ```bash
 python pathology/pathology_postprocess.py --dataset data/vlm_dataset_demo
 ```
 
-Key outputs: `images/*.png`, `metadata.jsonl`, and `pairs.jsonl` (ShareGPT format). Adjust pathology ranges in `generate_vlm_dataset.py` as needed.
+Key outputs for any dataset root: `images/*.png`, `metadata.jsonl`, and `pairs.jsonl` (ShareGPT format). Pathology ranges and profiles are best adjusted via the YAML configs in `pathology/` rather than editing Python.
 
 ## Training with LLaMA-Factory
 Place `OCTA-100K-SVR` under `data/OCTA-100K-SVR/` (so `pairs_diversified.jsonl` and `images/` live there), then run:
