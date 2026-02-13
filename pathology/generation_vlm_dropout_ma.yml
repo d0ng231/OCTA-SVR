@@ -1,18 +1,18 @@
 General:
   seed: null
-  num_samples: 1000          # 调到 100000 即可对齐 OCT_22_100k
+  num_samples: 1000          # Set to 100000 to align with OCT_22_100k.
   workers: -1                # -1 => all CPU cores but one
-  use_gan: false             # GAN 用 CLI 打开，便于在无 GAN 时调试
-  save_masks: false          # 与原始 dropout_ma 设置一致（不导出 /masks）
+  use_gan: false             # Enable GAN from CLI, convenient for debugging without GAN.
+  save_masks: false          # Keep consistent with original dropout_ma setup (do not export /masks).
 
 Paths:
   out_dir: ./data/vlm_dataset_dropout_ma
   vessel_config: ./pathology/vessel_graph_generation/configs/dataset_18_June_2023.yml
-  # gan_config 不在这里写死，使用 CLI --gan_config 传入
+  # Do not hardcode gan_config here; pass it via CLI --gan_config.
 
 GAN:
   epoch: "150"
-  # GAN batch_size / num_workers 同样建议用 CLI 或单独 YAML 控制
+  # GAN batch_size / num_workers are also recommended to be controlled by CLI or separate YAML.
 
 Pathology:
 
@@ -64,7 +64,7 @@ Pathology:
     band: [0.30, 0.75]
 
 VQA:
-  # Mixed-only VQA（本地脚本会自动用 build_mixed_paragraph）
+  # Mixed-only VQA (the local script will automatically use build_mixed_paragraph).
 
 FAZ:
   # Uniform disk jitter radius in normalized units (used as view shift to keep growth unchanged)
@@ -82,4 +82,3 @@ Render:
   nv_radius_scale: 1.1
   # Optional: burn MA into grayscale (kept true so GAN sees MA shapes)
   ma_overlay_burn_gray: true
-

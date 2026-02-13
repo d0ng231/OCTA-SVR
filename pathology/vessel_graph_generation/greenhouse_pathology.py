@@ -241,11 +241,11 @@ class NVRegion:
         return self.inside_score(float(pos[0]), float(pos[1])) > 0.0
 
     def _ensure_anchor(self, greenhouse: Greenhouse):
-        # 如果已经有anchor和tips，直接返回（避免重复初始化）
+        # If anchor and tips already exist, return directly to avoid re-initialization.
         if self.anchor is not None and self.tips:
             return
-        
-        # 找到最近的动脉节点作为anchor（用于连接到正常血管网络）
+
+        # Find the nearest arterial node as anchor to connect with the normal vascular network.
         center3 = np.array([self.center[0], self.center[1], greenhouse.simspace.shape[2] * 0.5], dtype=float)
         cand = greenhouse.art_node_mesh.find_nearest_element(center3, max_dist=np.inf)
         if cand is None:
@@ -1013,19 +1013,19 @@ class GreenhouseDropout(Greenhouse):
         if not self.dropouts:
             return
         
-        # 获取FAZ（中心凹无血管区）的信息
+        # Get FAZ (foveal avascular zone) information.
         try:
             fx, fy = float(getattr(self, 'FAZ_center', (0.5, 0.5))[0]), float(getattr(self, 'FAZ_center', (0.5, 0.5))[1])
             fr = float(getattr(self, 'FAZ_radius', 0.06))
         except Exception:
             fx, fy, fr = 0.5, 0.5, 0.06
         
-        # 选择不与FAZ核心重叠的dropout区域
+        # Select dropout regions that do not overlap with the FAZ core.
         valid = []
         for d in self.dropouts:
             try:
                 cx, cy, r0 = float(d.cx), float(d.cy), float(d.r0)
-                # 保持与FAZ核心足够距离
+                # Keep enough distance from the FAZ core.
                 dist_f = math.hypot(cx - fx, cy - fy)
                 if dist_f <= (1.2 * fr):
                     continue
@@ -1110,7 +1110,7 @@ class GreenhouseDropout(Greenhouse):
                 edge = np.power(np.maximum(1e-3, 1.0 - cores), float(self.degeneration_core_bias))
 
                 # When strength is high, modify weighting to include large vessels
-                # But still prioritize small vessels (优先小血管)
+                # But still prioritize small vessels.
                 if avg_strength > high_strength_threshold:
                     # Blend between pure small-vessel preference and more uniform removal
                     # strength_factor: 0.85->0.0, 1.0->1.0
@@ -1161,12 +1161,14 @@ class GreenhouseDropout(Greenhouse):
                 if rm_core > 0 and len(idx_protect) > 0:
                     pw = weights[idx_protect] if weights is not None else None
                     if pw is not None:
-                        pw = (pw / float(np.sum(pw))).astype(float)
+                        pw_sum = float(np.sum(pw))
+                        pw = (pw / pw_sum).astype(float) if pw_sum > 0.0 and np.isfinite(pw_sum) else None
                     sel_core = np.random.default_rng().choice(idx_protect, size=rm_core, replace=False, p=pw)
                 if rm_other > 0 and len(idx_other) > 0:
                     ow = weights[idx_other] if weights is not None else None
                     if ow is not None:
-                        ow = (ow / float(np.sum(ow))).astype(float)
+                        ow_sum = float(np.sum(ow))
+                        ow = (ow / ow_sum).astype(float) if ow_sum > 0.0 and np.isfinite(ow_sum) else None
                     sel_other = np.random.default_rng().choice(idx_other, size=rm_other, replace=False, p=ow)
                 sel_idx = np.concatenate([sel_core, sel_other]).astype(int)
 
