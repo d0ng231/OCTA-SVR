@@ -1486,7 +1486,7 @@ def _generate_single_sample(
                             base_img_white = base_img_white.crop(crop_coords)
                 except Exception:
                     pass
-                # Cyan overlay visualization（包含 Dropout/MA/NV）
+                # Cyan overlay visualization (includes Dropout/MA/NV).
                 composed.save(os.path.join(out_dir, "pathology_vis.png"))
                 # White-burned overlay image for dataset usage (always save, even for healthy cases)
                 # Auto-crop black borders to square for FAZ shift cases
@@ -1510,7 +1510,7 @@ def _generate_single_sample(
                             img_to_save.save(os.path.join(out_dir, "pathology_overlay_white.png"))
                 except Exception:
                     pass
-                # 不再生成 dropout_mask_vis.png
+                # No longer generate dropout_mask_vis.png.
             except Exception:
                 pass
 
